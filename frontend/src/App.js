@@ -3,12 +3,15 @@ import { AuthProvider } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
+import Profile from './components/Profile';
+import Navbar from './components/Navbar';
 
 function App() {
     return (
         <Router>
             <AuthProvider>
                 <div className="min-h-screen bg-gray-100">
+                  <Navbar />
                     <Routes>
                         <Route path="/login" element={<Auth />} />
                         <Route
@@ -19,6 +22,15 @@ function App() {
                                 </PrivateRoute>
                             }
                         />
+                         <Route
+                            path="/profile"
+                            element={
+                                <PrivateRoute>
+                                    <Profile />
+                                </PrivateRoute>
+                            }
+                        />
+
                     </Routes>
                 </div>
             </AuthProvider>
