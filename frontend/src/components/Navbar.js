@@ -23,6 +23,9 @@ function Navbar() {
               <Link to="/profile" className="text-gray-700 hover:text-gray-900">
                 Profile
               </Link>
+              <Link to="/exercise" className="text-gray-700 hover:text-gray-900">
+                Exercise
+              </Link>
             </div>
           )}
         </div>

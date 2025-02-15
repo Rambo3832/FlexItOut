@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 import Profile from './components/Profile';
 import Navbar from './components/Navbar';
+import ExerciseDetection from './components/ExerciseDetection';
 
 function App() {
     return (
@@ -29,6 +30,14 @@ function App() {
                                     <Profile />
                                 </PrivateRoute>
                             }
+                        />
+                        <Route
+                          path="/exercise"
+                          element={
+                            <PrivateRoute>
+                              <ExerciseDetection />
+                            </PrivateRoute>
+                          }
                         />
 
                     </Routes>
