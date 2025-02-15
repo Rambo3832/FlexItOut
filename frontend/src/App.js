@@ -1,17 +1,32 @@
-
-import Auth from "./Auth";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Auth from './components/Auth';
+import Dashboard from './components/Dashboard';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
-  return (
-    <div>
-      <Auth />
-    </div>
-  );
+    return (
+        <Router>
+            <AuthProvider>
+                <div className="min-h-screen bg-gray-100">
+                    <Routes>
+                        <Route path="/login" element={<Auth />} />
+                        <Route
+                            path="/"
+                            element={
+                                <PrivateRoute>
+                                    <Dashboard />
+                                </PrivateRoute>
+                            }
+                        />
+                    </Routes>
+                </div>
+            </AuthProvider>
+        </Router>
+    );
 }
 
 export default App;
-
-
 
 // import { useEffect, useState } from "react";
 
