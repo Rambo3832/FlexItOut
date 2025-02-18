@@ -1,6 +1,6 @@
 # FlexItOut
 
-Here's a comprehensive update on your project: <br>
+Here's a comprehensive update on my project: <br>
 COMPLETED FEATURES: <br><br>
 
 Authentication & User Management: <br><br>
