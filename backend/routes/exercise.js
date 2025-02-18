@@ -1,7 +1,6 @@
-// routes/exercises.js
 const router = require('express').Router();
 const ExerciseRecord = require('../models/ExerciseRecord');
-const { verifyToken } = require('../middleware/auth');
+const verifyToken = require('../middleware/auth'); // Ensure correct import
 
 router.post('/record', verifyToken, async (req, res) => {
   try {
@@ -31,3 +30,5 @@ router.get('/history', verifyToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+module.exports = router; // Ensure the router is properly exported
