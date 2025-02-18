@@ -1,8 +1,19 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
+import Leaderboard from './Leaderboard';
 
 function Dashboard() {
   const { currentUser } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error logging out:", error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -13,7 +24,14 @@ function Dashboard() {
               <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
                 <h2 className="text-2xl font-bold mb-4">Welcome to FlexItOut!</h2>
                 <p>Logged in as: {currentUser?.email}</p>
+                <button 
+                  onClick={handleLogout} 
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition duration-200 mt-4"
+                >
+                  Logout
+                </button>
               </div>
+              <Leaderboard />
             </div>
           </div>
         </div>

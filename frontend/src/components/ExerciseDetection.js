@@ -1,180 +1,27 @@
-// import React, { useRef, useEffect, useState } from 'react';
-// import * as tf from '@tensorflow/tfjs';
-// import * as poseDetection from '@tensorflow-models/pose-detection';
-
-// function ExerciseDetection() {
-//   const videoRef = useRef(null);
-//   const canvasRef = useRef(null);
-//   const [detector, setDetector] = useState(null);
-//   const [exerciseCount, setExerciseCount] = useState(0);
-
-//   // Initialize pose detector
-//   useEffect(() => {
-//     async function initializeDetector() {
-//       await tf.ready();
-//       const model = poseDetection.SupportedModels.MoveNet;
-//       const detector = await poseDetection.createDetector(model);
-//       setDetector(detector);
-//     }
-//     initializeDetector();
-//   }, []);
-
-//   // Set up webcam
-//   useEffect(() => {
-//     async function setupCamera() {
-//       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-//         throw new Error('Browser API navigator.mediaDevices.getUserMedia not available');
-//       }
-
-//       const stream = await navigator.mediaDevices.getUserMedia({
-//         video: true,
-//         audio: false,
-//       });
-
-//       if (videoRef.current) {
-//         videoRef.current.srcObject = stream;
-//       }
-//     }
-
-//     setupCamera();
-//   }, []);
-
-//   // Detect poses
-//   useEffect(() => {
-//     let requestId;
-
-//     async function detectPose() {
-//       if (!detector || !videoRef.current || !canvasRef.current) return;
-
-//       const video = videoRef.current;
-//       const canvas = canvasRef.current;
-//       const ctx = canvas.getContext('2d');
-
-//       // Make sure video is ready
-//       if (video.readyState === 4) {
-//         const poses = await detector.estimatePoses(video);
-        
-//         // Clear canvas and draw video frame
-//         ctx.clearRect(0, 0, canvas.width, canvas.height);
-//         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-//         // Draw keypoints
-//         if (poses.length > 0) {
-//           drawKeypoints(poses[0], ctx);
-//         }
-//       }
-
-//       requestId = requestAnimationFrame(detectPose);
-//     }
-
-//     detectPose();
-
-//     return () => {
-//       if (requestId) {
-//         cancelAnimationFrame(requestId);
-//       }
-//     };
-//   }, [detector]);
-
-//   // Draw keypoints function
-//   const drawKeypoints = (pose, ctx) => {
-//     const keypoints = pose.keypoints;
-    
-//     // Draw points
-//     keypoints.forEach(keypoint => {
-//       if (keypoint.score > 0.3) {
-//         ctx.beginPath();
-//         ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
-//         ctx.fillStyle = 'red';
-//         ctx.fill();
-//       }
-//     });
-
-//     // Draw connections
-//     drawSkeleton(keypoints, ctx);
-//   };
-
-//   // Draw skeleton function
-//   const drawSkeleton = (keypoints, ctx) => {
-//     // Define connections between points
-//     const connections = [
-//       ['nose', 'left_eye'], ['left_eye', 'left_ear'],
-//       ['nose', 'right_eye'], ['right_eye', 'right_ear'],
-//       ['left_shoulder', 'right_shoulder'], 
-//       ['left_shoulder', 'left_elbow'],
-//       ['right_shoulder', 'right_elbow'],
-//       ['left_elbow', 'left_wrist'],
-//       ['right_elbow', 'right_wrist'],
-//       ['left_shoulder', 'left_hip'],
-//       ['right_shoulder', 'right_hip'],
-//       ['left_hip', 'right_hip'],
-//       ['left_hip', 'left_knee'],
-//       ['right_hip', 'right_knee'],
-//       ['left_knee', 'left_ankle'],
-//       ['right_knee', 'right_ankle']
-//     ];
-
-//     ctx.strokeStyle = 'blue';
-//     ctx.lineWidth = 2;
-
-//     connections.forEach(([first, second]) => {
-//       const firstPoint = keypoints.find(kp => kp.name === first);
-//       const secondPoint = keypoints.find(kp => kp.name === second);
-
-//       if (firstPoint && secondPoint && firstPoint.score > 0.3 && secondPoint.score > 0.3) {
-//         ctx.beginPath();
-//         ctx.moveTo(firstPoint.x, firstPoint.y);
-//         ctx.lineTo(secondPoint.x, secondPoint.y);
-//         ctx.stroke();
-//       }
-//     });
-//   };
-
-//   return (
-//     <div className="relative max-w-2xl mx-auto mt-8">
-//       <div className="relative">
-//         <video
-//           ref={videoRef}
-//           className="hidden"
-//           autoPlay
-//           playsInline
-//           width="640"
-//           height="480"
-//         />
-//         <canvas
-//           ref={canvasRef}
-//           className="rounded-lg shadow-lg"
-//           width="640"
-//           height="480"
-//         />
-//       </div>
-//       <div className="mt-4 p-4 bg-white rounded-lg shadow">
-//         <h2 className="text-xl font-bold">Exercise Count: {exerciseCount}</h2>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default ExerciseDetection;
-
-
-
 import React, { useRef, useEffect, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
 
 const EXERCISE_TYPES = [
-  { 
-    id: 'pushup', 
+  {
+    id: 'pushup',
     name: 'Push-ups',
     description: 'Upper body strength exercise',
-    keypoints: ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist']
+    instructions: 'Keep your back straight and lower your body until your chest nearly touches the ground',
+    targetAngles: {
+      elbow: { min: 70, max: 110 },
+      back: { min: 160, max: 200 }
+    }
   },
-  { 
-    id: 'squat', 
+  {
+    id: 'squat',
     name: 'Squats',
     description: 'Lower body strength exercise',
-    keypoints: ['left_hip', 'right_hip', 'left_knee', 'right_knee', 'left_ankle', 'right_ankle']
+    instructions: 'Keep your back straight and lower your body until thighs are parallel to ground',
+    targetAngles: {
+      knee: { min: 80, max: 100 },
+      hip: { min: 70, max: 100 }
+    }
   }
 ];
 
@@ -182,116 +29,237 @@ function ExerciseDetection() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [detector, setDetector] = useState(null);
-  const [exerciseCount, setExerciseCount] = useState(0);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isExerciseStarted, setIsExerciseStarted] = useState(false);
+  const [exerciseStats, setExerciseStats] = useState({
+    count: 0,
+    accuracy: 0,
+    feedback: '',
+    score: 0
+  });
   const [lastPoseState, setLastPoseState] = useState(null);
-  
-  // Initialize pose detector
+  const [stateConfidence, setStateConfidence] = useState(0);
+  const detectionRef = useRef(null);
+  const confidenceThreshold = 2; // Reduced from 3 to 2 for more responsive counting
+  const lastValidPoseTime = useRef(Date.now());
+  const MIN_POSE_INTERVAL = 300; // Minimum time (ms) between pose state changes
+
+  // Initialize detector
   useEffect(() => {
     async function initializeDetector() {
-      await tf.ready();
-      const model = poseDetection.SupportedModels.MoveNet;
-      const detector = await poseDetection.createDetector(model);
-      setDetector(detector);
+      try {
+        await tf.ready();
+        const detectorConfig = {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER
+        };
+        const detector = await poseDetection.createDetector(
+          poseDetection.SupportedModels.MoveNet,
+          detectorConfig
+        );
+        setDetector(detector);
+      } catch (error) {
+        console.error('Error initializing detector:', error);
+      }
     }
     initializeDetector();
+
+    return () => {
+      if (detectionRef.current) {
+        cancelAnimationFrame(detectionRef.current);
+      }
+    };
   }, []);
 
   // Set up webcam
   useEffect(() => {
     async function setupCamera() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Browser API navigator.mediaDevices.getUserMedia not available');
-      }
+      if (!isExerciseStarted) return;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false,
+        });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing webcam:', error);
       }
     }
 
-    if (isExerciseStarted) {
-      setupCamera();
-    }
+    setupCamera();
+
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
   }, [isExerciseStarted]);
 
-  // Function to check pushup state
-  const checkPushupState = (keypoints) => {
-    const leftElbow = keypoints.find(kp => kp.name === 'left_elbow');
-    const rightElbow = keypoints.find(kp => kp.name === 'right_elbow');
-    const leftShoulder = keypoints.find(kp => kp.name === 'left_shoulder');
-    const rightShoulder = keypoints.find(kp => kp.name === 'right_shoulder');
+  // Calculate angle between three points
+  const calculateAngle = (pointA, pointB, pointC) => {
+    if (!pointA?.score || !pointB?.score || !pointC?.score) return null;
+    if (pointA.score < 0.3 || pointB.score < 0.3 || pointC.score < 0.3) return null;
+
+    const radians = Math.atan2(pointC.y - pointB.y, pointC.x - pointB.x) -
+                   Math.atan2(pointA.y - pointB.y, pointA.x - pointB.x);
+    let angle = Math.abs(radians * 180.0 / Math.PI);
     
-    if (!leftElbow || !rightElbow || !leftShoulder || !rightShoulder) return null;
-    
-    // Calculate average elbow height relative to shoulders
-    const elbowHeight = (leftElbow.y + rightElbow.y) / 2;
-    const shoulderHeight = (leftShoulder.y + rightShoulder.y) / 2;
-    
-    // If elbows are significantly below shoulders, consider it "down" position
-    return (elbowHeight - shoulderHeight) > 30 ? 'down' : 'up';
+    if (angle > 180.0) {
+      angle = 360 - angle;
+    }
+    return angle;
   };
 
-  // Function to check squat state
-  const checkSquatState = (keypoints) => {
-    const leftKnee = keypoints.find(kp => kp.name === 'left_knee');
-    const rightKnee = keypoints.find(kp => kp.name === 'right_knee');
-    const leftHip = keypoints.find(kp => kp.name === 'left_hip');
-    const rightHip = keypoints.find(kp => kp.name === 'right_hip');
-    
-    if (!leftKnee || !rightKnee || !leftHip || !rightHip) return null;
-    
-    // Calculate knee angle
-    const kneeHeight = (leftKnee.y + rightKnee.y) / 2;
-    const hipHeight = (leftHip.y + rightHip.y) / 2;
-    
-    // If knees are significantly bent, consider it "down" position
-    return (kneeHeight - hipHeight) > 50 ? 'down' : 'up';
+  // Check exercise state and form with confidence tracking
+  const checkExerciseForm = (pose) => {
+    if (!selectedExercise || !pose.keypoints) return null;
+
+    const keypoints = pose.keypoints;
+    let state = null;
+    let feedback = '';
+    let accuracy = 100;
+    let isValidPose = true;
+
+    if (selectedExercise.id === 'pushup') {
+      const leftShoulder = keypoints.find(kp => kp.name === 'left_shoulder');
+      const leftElbow = keypoints.find(kp => kp.name === 'left_elbow');
+      const leftWrist = keypoints.find(kp => kp.name === 'left_wrist');
+      const rightShoulder = keypoints.find(kp => kp.name === 'right_shoulder');
+      const rightElbow = keypoints.find(kp => kp.name === 'right_elbow');
+      const rightWrist = keypoints.find(kp => kp.name === 'right_wrist');
+
+      // More lenient keypoint validation
+      const requiredKeypoints = [leftShoulder, leftElbow, leftWrist, rightShoulder, rightElbow, rightWrist];
+      isValidPose = requiredKeypoints.filter(kp => kp?.score > 0.2).length >= 4; // Only need 4 out of 6 points
+
+      if (isValidPose) {
+        const leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+        const rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+
+        // Use either angle if available
+        const effectiveAngle = leftElbowAngle || rightElbowAngle;
+        
+        if (effectiveAngle) {
+          if (effectiveAngle < 100) { // Adjusted threshold
+            state = 'down';
+          } else {
+            state = 'up';
+          }
+
+          // More lenient form checking
+          if (effectiveAngle < selectedExercise.targetAngles.elbow.min - 10) {
+            feedback = 'Bend your elbows less!';
+            accuracy -= 15;
+          } else if (effectiveAngle > selectedExercise.targetAngles.elbow.max + 10) {
+            feedback = 'Bend your elbows more!';
+            accuracy -= 15;
+          }
+        }
+      }
+    } else if (selectedExercise.id === 'squat') {
+      const leftHip = keypoints.find(kp => kp.name === 'left_hip');
+      const leftKnee = keypoints.find(kp => kp.name === 'left_knee');
+      const leftAnkle = keypoints.find(kp => kp.name === 'left_ankle');
+      
+      // More lenient keypoint validation
+      const requiredKeypoints = [leftHip, leftKnee, leftAnkle];
+      isValidPose = requiredKeypoints.filter(kp => kp?.score > 0.2).length >= 2;
+
+      if (isValidPose) {
+        const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
+        
+        if (kneeAngle) {
+          if (kneeAngle < 110) { // Adjusted threshold
+            state = 'down';
+          } else {
+            state = 'up';
+          }
+
+          // More lenient form checking
+          if (kneeAngle < selectedExercise.targetAngles.knee.min - 10) {
+            feedback = 'Don\'t go too low!';
+            accuracy -= 15;
+          } else if (kneeAngle > selectedExercise.targetAngles.knee.max + 10) {
+            feedback = 'Go lower!';
+            accuracy -= 15;
+          }
+        }
+      }
+    }
+
+    return { state, feedback, accuracy: Math.max(accuracy, 0), isValidPose };
   };
 
-  // Detect poses and count reps
+  // Modified pose detection loop with more lenient state management
   useEffect(() => {
-    let requestId;
-
     async function detectPose() {
-      if (!detector || !videoRef.current || !canvasRef.current || !selectedExercise) return;
+      if (!detector || !videoRef.current || !canvasRef.current || !isExerciseStarted) return;
 
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
       if (video.readyState === 4) {
-        const poses = await detector.estimatePoses(video);
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        if (poses.length > 0) {
-          drawKeypoints(poses[0], ctx);
+        try {
+          const poses = await detector.estimatePoses(video);
           
-          // Check exercise state and count reps
-          let currentState = null;
-          if (selectedExercise.id === 'pushup') {
-            currentState = checkPushupState(poses[0].keypoints);
-          } else if (selectedExercise.id === 'squat') {
-            currentState = checkSquatState(poses[0].keypoints);
-          }
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          if (currentState && lastPoseState && currentState !== lastPoseState) {
-            if (currentState === 'up' && lastPoseState === 'down') {
-              setExerciseCount(prev => prev + 1);
+          if (poses.length > 0) {
+            drawPose(poses[0], ctx);
+
+            const formCheck = checkExerciseForm(poses[0]);
+            
+            if (formCheck) {
+              setExerciseStats(prev => ({
+                ...prev,
+                accuracy: formCheck.accuracy,
+                feedback: formCheck.feedback
+              }));
+
+              const currentTime = Date.now();
+              
+              // State management with more lenient timing
+              if (formCheck.state && formCheck.isValidPose) {
+                if (formCheck.state === lastPoseState) {
+                  setStateConfidence(prev => Math.min(prev + 1, confidenceThreshold));
+                } else {
+                  // Only reset confidence if enough time has passed
+                  if (currentTime - lastValidPoseTime.current > MIN_POSE_INTERVAL) {
+                    setStateConfidence(0);
+                  }
+                }
+
+                // Count rep with more lenient conditions
+                if (
+                  (stateConfidence >= confidenceThreshold - 1 || 
+                   currentTime - lastValidPoseTime.current > MIN_POSE_INTERVAL) &&
+                  formCheck.state !== lastPoseState
+                ) {
+                  if (formCheck.state === 'up' && lastPoseState === 'down') {
+                    setExerciseStats(prev => ({
+                      ...prev,
+                      count: prev.count + 1,
+                      score: (prev.count + 1) * formCheck.accuracy
+                    }));
+                    lastValidPoseTime.current = currentTime;
+                  }
+                  setLastPoseState(formCheck.state);
+                }
+              }
             }
           }
-          setLastPoseState(currentState);
+        } catch (error) {
+          console.error('Error in pose detection:', error);
         }
       }
 
-      requestId = requestAnimationFrame(detectPose);
+      detectionRef.current = requestAnimationFrame(detectPose);
     }
 
     if (isExerciseStarted) {
@@ -299,40 +267,30 @@ function ExerciseDetection() {
     }
 
     return () => {
-      if (requestId) {
-        cancelAnimationFrame(requestId);
+      if (detectionRef.current) {
+        cancelAnimationFrame(detectionRef.current);
       }
     };
-  }, [detector, selectedExercise, isExerciseStarted, lastPoseState]);
+  }, [detector, isExerciseStarted, lastPoseState, selectedExercise, stateConfidence]);
 
 
-
-  // Your existing drawKeypoints and drawSkeleton functions remain the same
-    // Draw keypoints function
-  const drawKeypoints = (pose, ctx) => {
-    const keypoints = pose.keypoints;
-    
-    // Draw points
-    keypoints.forEach(keypoint => {
+  
+  // Rest of the component (drawPose and return statement) remains the same...
+  const drawPose = (pose, ctx) => {
+    // Draw keypoints
+    pose.keypoints.forEach(keypoint => {
       if (keypoint.score > 0.3) {
         ctx.beginPath();
         ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
         ctx.fillStyle = 'red';
         ctx.fill();
+        ctx.closePath();
       }
     });
 
-    // Draw connections
-    drawSkeleton(keypoints, ctx);
-  };
-
-  // Draw skeleton function
-  const drawSkeleton = (keypoints, ctx) => {
-    // Define connections between points
+    // Draw skeleton
     const connections = [
-      ['nose', 'left_eye'], ['left_eye', 'left_ear'],
-      ['nose', 'right_eye'], ['right_eye', 'right_ear'],
-      ['left_shoulder', 'right_shoulder'], 
+      ['left_shoulder', 'right_shoulder'],
       ['left_shoulder', 'left_elbow'],
       ['right_shoulder', 'right_elbow'],
       ['left_elbow', 'left_wrist'],
@@ -350,30 +308,16 @@ function ExerciseDetection() {
     ctx.lineWidth = 2;
 
     connections.forEach(([first, second]) => {
-      const firstPoint = keypoints.find(kp => kp.name === first);
-      const secondPoint = keypoints.find(kp => kp.name === second);
+      const firstPoint = pose.keypoints.find(kp => kp.name === first);
+      const secondPoint = pose.keypoints.find(kp => kp.name === second);
 
-      if (firstPoint && secondPoint && firstPoint.score > 0.3 && secondPoint.score > 0.3) {
+      if (firstPoint?.score > 0.3 && secondPoint?.score > 0.3) {
         ctx.beginPath();
         ctx.moveTo(firstPoint.x, firstPoint.y);
         ctx.lineTo(secondPoint.x, secondPoint.y);
         ctx.stroke();
       }
     });
-  };
-
-
-
-
-
-
-  const handleStartExercise = () => {
-    if (!selectedExercise) {
-      alert('Please select an exercise first');
-      return;
-    }
-    setIsExerciseStarted(true);
-    setExerciseCount(0);
   };
 
   return (
@@ -394,12 +338,13 @@ function ExerciseDetection() {
               >
                 <h3 className="font-semibold">{exercise.name}</h3>
                 <p className="text-gray-600">{exercise.description}</p>
+                <p className="text-sm text-gray-500 mt-2">{exercise.instructions}</p>
               </div>
             ))}
           </div>
           <button
             className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
-            onClick={handleStartExercise}
+            onClick={() => setIsExerciseStarted(true)}
             disabled={!selectedExercise}
           >
             Start Exercise
@@ -421,18 +366,50 @@ function ExerciseDetection() {
             width="640"
             height="480"
           />
-          <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold">{selectedExercise.name}</h3>
-            <p className="text-2xl font-bold">Reps: {exerciseCount}</p>
+          <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-lg">
+            <h3 className="font-bold text-xl">{selectedExercise.name}</h3>
+            <p className="text-3xl font-bold text-blue-600">Reps: {exerciseStats.count}</p>
+            <p className="text-lg">Accuracy: {exerciseStats.accuracy}%</p>
+            <p className="text-lg">Score: {exerciseStats.score}</p>
+            {exerciseStats.feedback && (
+              <p className="text-orange-500 font-medium mt-2">{exerciseStats.feedback}</p>
+            )}
             <button
-              className="mt-2 bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+              className="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
               onClick={() => {
+                // Stop all tracks from the video stream
+                if (videoRef.current?.srcObject) {
+                  const tracks = videoRef.current.srcObject.getTracks();
+                  tracks.forEach(track => track.stop());
+                  videoRef.current.srcObject = null;
+                }
+                
+                // Clear the canvas
+                if (canvasRef.current) {
+                  const ctx = canvasRef.current.getContext('2d');
+                  ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                }
+                
+                // Cancel any ongoing animation frame
+                if (detectionRef.current) {
+                  cancelAnimationFrame(detectionRef.current);
+                  detectionRef.current = null;
+                }
+                
+                // Reset all states
                 setIsExerciseStarted(false);
                 setSelectedExercise(null);
-                setExerciseCount(0);
+                setExerciseStats({
+                  count: 0,
+                  accuracy: 0,
+                  feedback: '',
+                  score: 0
+                });
+                setLastPoseState(null);
+                setStateConfidence(0);
               }}
             >
-              Stop Exercise
+              End Exercise
             </button>
           </div>
         </div>
