@@ -1,32 +1,32 @@
 # FlexItOut
 
-Here's a comprehensive update on your project:
-COMPLETED FEATURES:
+Here's a comprehensive update on your project: <br>
+COMPLETED FEATURES: <br><br>
 
-Authentication & User Management:
-
-
-Firebase authentication integration
-User profile creation and management
-Basic profile data storage
+Authentication & User Management: <br><br><br>
 
 
-Exercise Detection System:
-
-
-TensorFlow.js integration for pose detection
-Real-time camera access and pose visualization
-Basic skeleton drawing
-Exercise type selection (Push-ups, Squats, Crunches)
-Rep counting implementation
-Form accuracy checking
-Real-time feedback system
-
-
-Frontend Structure:
-
-
-React-based responsive UI
+Firebase authentication integration<br>
+User profile creation and management<br>
+Basic profile data storage<br>
+<br>
+<br>
+Exercise Detection System:<br>
+<br>
+<br>
+TensorFlow.js integration for pose detection<br>
+Real-time camera access and pose visualization<br>
+Basic skeleton drawing<br>
+Exercise type selection (Push-ups, Squats, Crunches)<br>
+Rep counting implementation<br>
+Form accuracy checking<br>
+Real-time feedback system<br>
+<br>
+<br>
+Frontend Structure:<br>
+<br>
+<br>
+React-based responsive UI<br>
 Navigation system
 Private route protection
 Exercise detection component
