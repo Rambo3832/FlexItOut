@@ -5,18 +5,34 @@ const verifyToken = require('../middleware/auth'); // Ensure correct import
 router.post('/record', verifyToken, async (req, res) => {
   try {
     const { exerciseType, reps, accuracy, score, duration } = req.body;
+    
+    // Validate required fields
+    if (!exerciseType || !reps || !accuracy || !score) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['exerciseType', 'reps', 'accuracy', 'score']
+      });
+    }
+
     const record = new ExerciseRecord({
       userId: req.user.uid,
       exerciseType,
       reps,
       accuracy,
       score,
-      duration
+      duration: duration || 0
     });
-    await record.save();
-    res.status(201).json(record);
+
+    const savedRecord = await record.save();
+    console.log('Exercise record saved:', savedRecord);
+    
+    res.status(201).json(savedRecord);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error saving exercise record:', error);
+    res.status(500).json({ 
+      error: 'Failed to save exercise record',
+      details: error.message 
+    });
   }
 });
 

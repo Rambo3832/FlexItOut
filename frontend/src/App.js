@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Profile from './components/Profile';
 import Navbar from './components/Navbar';
 import ExerciseDetection from './components/ExerciseDetection';
+import Challenges from './components/Challenges';
 
 function App() {
     return (
@@ -39,7 +40,15 @@ function App() {
                             </PrivateRoute>
                           }
                         />
-
+                        <Route
+                        path="/challenges"
+                            element={
+                                <PrivateRoute>
+                                    <Challenges />
+                                </PrivateRoute>
+                            }
+                        />
+                        
                     </Routes>
                 </div>
             </AuthProvider>

@@ -1,11 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import Leaderboard from './Leaderboard';
+import axios from 'axios';
+
 
 function Dashboard() {
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    const registerUser = async () => {
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          await axios.post('http://localhost:5000/routes/auth/register', {
+            email: currentUser.email,
+            username: currentUser.email.split('@')[0], // Default username from email
+            profile: {
+              fitnessLevel: 'beginner'
+            }
+          }, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        } catch (error) {
+          console.error('Error registering user:', error);
+        }
+      }
+    };
+
+    registerUser();
+  }, [currentUser]);
 
   const handleLogout = async () => {
     try {

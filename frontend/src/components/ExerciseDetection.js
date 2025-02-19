@@ -7,11 +7,12 @@ const EXERCISE_TYPES = [
     id: 'pushup',
     name: 'Push-ups',
     description: 'Upper body strength exercise',
-    instructions: 'Keep your back straight and lower your body until your chest nearly touches the ground',
+    instructions: 'Keep your back straight and lower your chest until your elbows form 90 degrees',
     targetAngles: {
       elbow: { min: 70, max: 110 },
       back: { min: 160, max: 200 }
-    }
+    },
+    keypoints: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist']
   },
   {
     id: 'squat',
@@ -21,7 +22,31 @@ const EXERCISE_TYPES = [
     targetAngles: {
       knee: { min: 80, max: 100 },
       hip: { min: 70, max: 100 }
-    }
+    },
+    keypoints: ['left_hip', 'left_knee', 'left_ankle', 'right_hip', 'right_knee', 'right_ankle']
+  },
+  {
+    id: 'lunges',
+    name: 'Lunges',
+    description: 'Lower body and balance exercise',
+    instructions: 'Step forward and lower your back knee towards the ground',
+    targetAngles: {
+      frontKnee: { min: 85, max: 105 },
+      backKnee: { min: 85, max: 105 },
+      torso: { min: 160, max: 200 }
+    },
+    keypoints: ['left_hip', 'left_knee', 'left_ankle', 'right_hip', 'right_knee', 'right_ankle']
+  },
+  {
+    id: 'plank',
+    name: 'Plank',
+    description: 'Core strength and stability exercise',
+    instructions: 'Maintain a straight line from head to heels',
+    targetAngles: {
+      elbow: { min: 85, max: 95 },
+      back: { min: 170, max: 190 }
+    },
+    keypoints: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist', 'left_hip', 'right_hip', 'left_ankle', 'right_ankle']
   }
 ];
 
@@ -99,10 +124,10 @@ function ExerciseDetection() {
     };
   }, [isExerciseStarted]);
 
-  // Calculate angle between three points
-  const calculateAngle = (pointA, pointB, pointC) => {
+  // Improved angle calculation with confidence threshold
+  const calculateAngle = (pointA, pointB, pointC, confidenceThreshold = 0.3) => {
     if (!pointA?.score || !pointB?.score || !pointC?.score) return null;
-    if (pointA.score < 0.3 || pointB.score < 0.3 || pointC.score < 0.3) return null;
+    if (pointA.score < confidenceThreshold || pointB.score < confidenceThreshold || pointC.score < confidenceThreshold) return null;
 
     const radians = Math.atan2(pointC.y - pointB.y, pointC.x - pointB.x) -
                    Math.atan2(pointA.y - pointB.y, pointA.x - pointB.x);
@@ -114,84 +139,184 @@ function ExerciseDetection() {
     return angle;
   };
 
+  // Add a function to validate required keypoints
+  const validateKeypoints = (pose, requiredKeypoints, confidenceThreshold = 0.3) => {
+    if (!pose?.keypoints) return false;
+    
+    const validKeypoints = requiredKeypoints.filter(keypointName => {
+      const keypoint = pose.keypoints.find(kp => kp.name === keypointName);
+      return keypoint && keypoint.score >= confidenceThreshold;
+    });
+
+    return validKeypoints.length === requiredKeypoints.length;
+  };
+
+  // Add a function to calculate exercise-specific angles
+  const calculateExerciseAngles = (pose, exercise) => {
+    const angles = {};
+    
+    switch (exercise.id) {
+      case 'pushup':
+        const leftShoulder = pose.keypoints.find(kp => kp.name === 'left_shoulder');
+        const leftElbow = pose.keypoints.find(kp => kp.name === 'left_elbow');
+        const leftWrist = pose.keypoints.find(kp => kp.name === 'left_wrist');
+        const rightShoulder = pose.keypoints.find(kp => kp.name === 'right_shoulder');
+        const rightElbow = pose.keypoints.find(kp => kp.name === 'right_elbow');
+        const rightWrist = pose.keypoints.find(kp => kp.name === 'right_wrist');
+  
+        angles.leftElbow = calculateAngle(leftShoulder, leftElbow, leftWrist);
+        angles.rightElbow = calculateAngle(rightShoulder, rightElbow, rightWrist);
+        break;
+  
+      case 'squat':
+        const leftHip = pose.keypoints.find(kp => kp.name === 'left_hip');
+        const leftKnee = pose.keypoints.find(kp => kp.name === 'left_knee');
+        const leftAnkle = pose.keypoints.find(kp => kp.name === 'left_ankle');
+        const rightHip = pose.keypoints.find(kp => kp.name === 'right_hip');
+        const rightKnee = pose.keypoints.find(kp => kp.name === 'right_knee');
+        const rightAnkle = pose.keypoints.find(kp => kp.name === 'right_ankle');
+  
+        angles.leftKnee = calculateAngle(leftHip, leftKnee, leftAnkle);
+        angles.rightKnee = calculateAngle(rightHip, rightKnee, rightAnkle);
+        break;
+  
+      case 'lunges':
+        const lungLeftHip = pose.keypoints.find(kp => kp.name === 'left_hip');
+        const lungLeftKnee = pose.keypoints.find(kp => kp.name === 'left_knee');
+        const lungLeftAnkle = pose.keypoints.find(kp => kp.name === 'left_ankle');
+        const lungRightHip = pose.keypoints.find(kp => kp.name === 'right_hip');
+        const lungRightKnee = pose.keypoints.find(kp => kp.name === 'right_knee');
+        const lungRightAnkle = pose.keypoints.find(kp => kp.name === 'right_ankle');
+  
+        angles.frontKnee = calculateAngle(lungLeftHip, lungLeftKnee, lungLeftAnkle);
+        angles.backKnee = calculateAngle(lungRightHip, lungRightKnee, lungRightAnkle);
+        break;
+  
+      case 'plank':
+        const plankLeftShoulder = pose.keypoints.find(kp => kp.name === 'left_shoulder');
+        const plankLeftElbow = pose.keypoints.find(kp => kp.name === 'left_elbow');
+        const plankLeftWrist = pose.keypoints.find(kp => kp.name === 'left_wrist');
+        const plankRightShoulder = pose.keypoints.find(kp => kp.name === 'right_shoulder');
+        const plankRightElbow = pose.keypoints.find(kp => kp.name === 'right_elbow');
+        const plankRightWrist = pose.keypoints.find(kp => kp.name === 'right_wrist');
+  
+        angles.leftElbow = calculateAngle(plankLeftShoulder, plankLeftElbow, plankLeftWrist);
+        angles.rightElbow = calculateAngle(plankRightShoulder, plankRightElbow, plankRightWrist);
+        break;
+    }
+  
+    return angles;
+  };
+  
+  const determineExerciseState = (angles, exercise) => {
+    let state = null;
+    let feedback = '';
+    let accuracy = 100;
+  
+    switch (exercise.id) {
+      case 'pushup':
+        const elbowAngle = angles.leftElbow || angles.rightElbow;
+        if (elbowAngle) {
+          if (elbowAngle < exercise.targetAngles.elbow.min) {
+            state = 'down';
+            feedback = 'Good depth! Push back up';
+          } else if (elbowAngle > exercise.targetAngles.elbow.max) {
+            state = 'up';
+            feedback = 'Lower your body more';
+            accuracy -= 15;
+          } else {
+            state = 'transition';
+            feedback = 'Good form! Keep going';
+          }
+        }
+        break;
+  
+      case 'squat':
+        const kneeAngle = angles.leftKnee || angles.rightKnee;
+        if (kneeAngle) {
+          if (kneeAngle < exercise.targetAngles.knee.min) {
+            state = 'down';
+            feedback = 'Great depth! Stand back up';
+          } else if (kneeAngle > exercise.targetAngles.knee.max) {
+            state = 'up';
+            feedback = 'Squat deeper';
+            accuracy -= 15;
+          } else {
+            state = 'transition';
+            feedback = 'Good form! Keep going';
+          }
+        }
+        break;
+  
+      case 'lunges':
+        const frontKneeAngle = angles.frontKnee;
+        const backKneeAngle = angles.backKnee;
+        if (frontKneeAngle && backKneeAngle) {
+          if (frontKneeAngle < exercise.targetAngles.frontKnee.min || 
+              backKneeAngle < exercise.targetAngles.backKnee.min) {
+            state = 'down';
+            feedback = 'Good depth! Push back up';
+          } else if (frontKneeAngle > exercise.targetAngles.frontKnee.max || 
+                     backKneeAngle > exercise.targetAngles.backKnee.max) {
+            state = 'up';
+            feedback = 'Lunge deeper';
+            accuracy -= 15;
+          } else {
+            state = 'transition';
+            feedback = 'Good form! Keep going';
+          }
+        }
+        break;
+  
+      case 'plank':
+        const plankElbowAngle = angles.leftElbow || angles.rightElbow;
+        if (plankElbowAngle) {
+          if (plankElbowAngle < exercise.targetAngles.elbow.min) {
+            state = 'incorrect';
+            feedback = 'Raise your body slightly';
+            accuracy -= 15;
+          } else if (plankElbowAngle > exercise.targetAngles.elbow.max) {
+            state = 'incorrect';
+            feedback = 'Lower your body slightly';
+            accuracy -= 15;
+          } else {
+            state = 'correct';
+            feedback = 'Great plank form! Keep holding';
+          }
+        }
+        break;
+    }
+  
+    return { state, feedback, accuracy };
+  };
+
   // Check exercise state and form with confidence tracking
   const checkExerciseForm = (pose) => {
     if (!selectedExercise || !pose.keypoints) return null;
 
-    const keypoints = pose.keypoints;
-    let state = null;
-    let feedback = '';
-    let accuracy = 100;
-    let isValidPose = true;
-
-    if (selectedExercise.id === 'pushup') {
-      const leftShoulder = keypoints.find(kp => kp.name === 'left_shoulder');
-      const leftElbow = keypoints.find(kp => kp.name === 'left_elbow');
-      const leftWrist = keypoints.find(kp => kp.name === 'left_wrist');
-      const rightShoulder = keypoints.find(kp => kp.name === 'right_shoulder');
-      const rightElbow = keypoints.find(kp => kp.name === 'right_elbow');
-      const rightWrist = keypoints.find(kp => kp.name === 'right_wrist');
-
-      // More lenient keypoint validation
-      const requiredKeypoints = [leftShoulder, leftElbow, leftWrist, rightShoulder, rightElbow, rightWrist];
-      isValidPose = requiredKeypoints.filter(kp => kp?.score > 0.2).length >= 4; // Only need 4 out of 6 points
-
-      if (isValidPose) {
-        const leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
-        const rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
-
-        // Use either angle if available
-        const effectiveAngle = leftElbowAngle || rightElbowAngle;
-        
-        if (effectiveAngle) {
-          if (effectiveAngle < 100) { // Adjusted threshold
-            state = 'down';
-          } else {
-            state = 'up';
-          }
-
-          // More lenient form checking
-          if (effectiveAngle < selectedExercise.targetAngles.elbow.min - 10) {
-            feedback = 'Bend your elbows less!';
-            accuracy -= 15;
-          } else if (effectiveAngle > selectedExercise.targetAngles.elbow.max + 10) {
-            feedback = 'Bend your elbows more!';
-            accuracy -= 15;
-          }
-        }
-      }
-    } else if (selectedExercise.id === 'squat') {
-      const leftHip = keypoints.find(kp => kp.name === 'left_hip');
-      const leftKnee = keypoints.find(kp => kp.name === 'left_knee');
-      const leftAnkle = keypoints.find(kp => kp.name === 'left_ankle');
-      
-      // More lenient keypoint validation
-      const requiredKeypoints = [leftHip, leftKnee, leftAnkle];
-      isValidPose = requiredKeypoints.filter(kp => kp?.score > 0.2).length >= 2;
-
-      if (isValidPose) {
-        const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-        
-        if (kneeAngle) {
-          if (kneeAngle < 110) { // Adjusted threshold
-            state = 'down';
-          } else {
-            state = 'up';
-          }
-
-          // More lenient form checking
-          if (kneeAngle < selectedExercise.targetAngles.knee.min - 10) {
-            feedback = 'Don\'t go too low!';
-            accuracy -= 15;
-          } else if (kneeAngle > selectedExercise.targetAngles.knee.max + 10) {
-            feedback = 'Go lower!';
-            accuracy -= 15;
-          }
-        }
-      }
+    // Validate required keypoints are visible
+    const isValidPose = validateKeypoints(pose, selectedExercise.keypoints);
+    if (!isValidPose) {
+      return {
+        state: null,
+        feedback: 'Please ensure your full body is visible',
+        accuracy: 0,
+        isValidPose: false
+      };
     }
 
-    return { state, feedback, accuracy: Math.max(accuracy, 0), isValidPose };
+    // Calculate angles for the current exercise
+    const angles = calculateExerciseAngles(pose, selectedExercise);
+    
+    // Determine exercise state and feedback
+    const { state, feedback, accuracy } = determineExerciseState(angles, selectedExercise);
+
+    return {
+      state,
+      feedback,
+      accuracy,
+      isValidPose: true
+    };
   };
 
   // Modified pose detection loop with more lenient state management
@@ -207,15 +332,28 @@ function ExerciseDetection() {
         try {
           const poses = await detector.estimatePoses(video);
           
+          // Clear and draw video frame
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
           if (poses.length > 0) {
-            drawPose(poses[0], ctx);
-
-            const formCheck = checkExerciseForm(poses[0]);
+            const pose = poses[0];
+            
+            // Draw skeleton
+            drawPose(pose, ctx);
+            
+            // Calculate and check form
+            const formCheck = checkExerciseForm(pose);
             
             if (formCheck) {
+              // Draw form guidelines
+              drawFormGuidelines(ctx, pose, selectedExercise);
+              
+              // Draw angle measurements
+              const angles = calculateExerciseAngles(pose, selectedExercise);
+              drawAngleMeasurements(ctx, pose, angles);
+              
+              // Update stats
               setExerciseStats(prev => ({
                 ...prev,
                 accuracy: formCheck.accuracy,
@@ -273,8 +411,65 @@ function ExerciseDetection() {
     };
   }, [detector, isExerciseStarted, lastPoseState, selectedExercise, stateConfidence]);
 
+  // Add this function after your other helper functions
+  const drawFormGuidelines = (ctx, pose, exercise) => {
+    if (!pose || !exercise) return;
 
-  
+    // Set drawing styles for guidelines
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+    ctx.lineWidth = 2;
+
+    // Draw exercise-specific guidelines
+    switch (exercise.id) {
+      case 'pushup':
+        // Draw back alignment line
+        const leftShoulder = pose.keypoints.find(kp => kp.name === 'left_shoulder');
+        const leftHip = pose.keypoints.find(kp => kp.name === 'left_hip');
+        if (leftShoulder?.score > 0.3 && leftHip?.score > 0.3) {
+          ctx.beginPath();
+          ctx.moveTo(leftShoulder.x, leftShoulder.y);
+          ctx.lineTo(leftHip.x, leftHip.y);
+          ctx.stroke();
+        }
+        break;
+
+      case 'squat':
+        // Draw depth line
+        const leftKnee = pose.keypoints.find(kp => kp.name === 'left_knee');
+        if (leftKnee?.score > 0.3) {
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(0, leftKnee.y);
+          ctx.lineTo(ctx.canvas.width, leftKnee.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        break;
+    }
+  };
+
+  // Add this function to draw angle measurements
+  const drawAngleMeasurements = (ctx, pose, angles) => {
+    if (!pose || !angles) return;
+
+    ctx.font = '16px Arial';
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+
+    Object.entries(angles).forEach(([angleName, angle]) => {
+      if (angle) {
+        // Find appropriate keypoint to place text
+        const keypoint = pose.keypoints.find(kp => kp.name.includes(angleName.toLowerCase()));
+        if (keypoint?.score > 0.3) {
+          const text = `${Math.round(angle)}°`;
+          ctx.strokeText(text, keypoint.x + 10, keypoint.y + 10);
+          ctx.fillText(text, keypoint.x + 10, keypoint.y + 10);
+        }
+      }
+    });
+  };
+
   // Rest of the component (drawPose and return statement) remains the same...
   const drawPose = (pose, ctx) => {
     // Draw keypoints
@@ -318,6 +513,65 @@ function ExerciseDetection() {
         ctx.stroke();
       }
     });
+  };
+
+  // Add this component for the exercise info overlay
+  const ExerciseInfoOverlay = ({ exercise, stats, onEnd }) => {
+    return (
+      <div className="absolute top-4 left-4 bg-white/90 p-4 rounded-lg shadow-lg max-w-xs">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-bold text-xl">{exercise.name}</h3>
+          <button
+            onClick={onEnd}
+            className="text-red-500 hover:text-red-700"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="space-y-2">
+          <p className="text-3xl font-bold text-blue-600">
+            Reps: {stats.count}
+          </p>
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">Accuracy:</span>
+            <div className="flex-1 bg-gray-200 rounded-full h-4">
+              <div 
+                className="bg-blue-600 rounded-full h-4 transition-all duration-300"
+                style={{ width: `${stats.accuracy}%` }}
+              />
+            </div>
+            <span className="text-lg">{stats.accuracy}%</span>
+          </div>
+          <p className="text-lg">Score: {stats.score}</p>
+          {stats.feedback && (
+            <div className={`p-2 rounded ${
+              stats.feedback.includes('Good') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+            }`}>
+              {stats.feedback}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Add this component for exercise instructions
+  const ExerciseInstructions = ({ exercise }) => {
+    return (
+      <div className="absolute bottom-4 left-4 right-4 bg-white/90 p-4 rounded-lg shadow-lg">
+        <h4 className="font-semibold mb-2">Instructions:</h4>
+        <p>{exercise.instructions}</p>
+        <div className="mt-2 text-sm text-gray-600">
+          <span className="font-medium">Tips: </span>
+          {exercise.id === 'pushup' && "Keep your core tight and body straight"}
+          {exercise.id === 'squat' && "Keep your chest up and knees aligned with toes"}
+          {exercise.id === 'plank' && "Maintain a straight line from head to heels"}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -366,52 +620,33 @@ function ExerciseDetection() {
             width="640"
             height="480"
           />
-          <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-lg">
-            <h3 className="font-bold text-xl">{selectedExercise.name}</h3>
-            <p className="text-3xl font-bold text-blue-600">Reps: {exerciseStats.count}</p>
-            <p className="text-lg">Accuracy: {exerciseStats.accuracy}%</p>
-            <p className="text-lg">Score: {exerciseStats.score}</p>
-            {exerciseStats.feedback && (
-              <p className="text-orange-500 font-medium mt-2">{exerciseStats.feedback}</p>
-            )}
-            <button
-              className="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-              onClick={() => {
-                // Stop all tracks from the video stream
-                if (videoRef.current?.srcObject) {
-                  const tracks = videoRef.current.srcObject.getTracks();
-                  tracks.forEach(track => track.stop());
-                  videoRef.current.srcObject = null;
-                }
-                
-                // Clear the canvas
-                if (canvasRef.current) {
-                  const ctx = canvasRef.current.getContext('2d');
-                  ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                }
-                
-                // Cancel any ongoing animation frame
-                if (detectionRef.current) {
-                  cancelAnimationFrame(detectionRef.current);
-                  detectionRef.current = null;
-                }
-                
-                // Reset all states
-                setIsExerciseStarted(false);
-                setSelectedExercise(null);
-                setExerciseStats({
-                  count: 0,
-                  accuracy: 0,
-                  feedback: '',
-                  score: 0
-                });
-                setLastPoseState(null);
-                setStateConfidence(0);
-              }}
-            >
-              End Exercise
-            </button>
-          </div>
+          
+          <ExerciseInfoOverlay 
+            exercise={selectedExercise}
+            stats={exerciseStats}
+            onEnd={() => {
+              // Stop video stream
+              if (videoRef.current?.srcObject) {
+                const tracks = videoRef.current.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+              }
+              
+              // Reset states
+              setIsExerciseStarted(false);
+              setSelectedExercise(null);
+              setExerciseStats({
+                count: 0,
+                accuracy: 0,
+                feedback: '',
+                score: 0
+              });
+              setLastPoseState(null);
+              setStateConfidence(0);
+            }}
+          />
+          
+          <ExerciseInstructions exercise={selectedExercise} />
         </div>
       )}
     </div>

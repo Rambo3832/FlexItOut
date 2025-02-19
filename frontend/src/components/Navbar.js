@@ -20,6 +20,9 @@ function Navbar() {
               <Link to="/" className="text-gray-700 hover:text-gray-900">
                 Dashboard
               </Link>
+              <Link to="/challenges" className="text-gray-700 hover:text-gray-900">
+                Challenges
+              </Link>
               <Link to="/profile" className="text-gray-700 hover:text-gray-900">
                 Profile
               </Link>
