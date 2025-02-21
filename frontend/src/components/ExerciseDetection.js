@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
+import { X } from 'lucide-react';
 
 const EXERCISE_TYPES = [
   {
@@ -582,80 +583,126 @@ function ExerciseDetection() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      {!isExerciseStarted ? (
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-bold mb-4">Select Exercise</h2>
-          <div className="space-y-4">
-            {EXERCISE_TYPES.map((exercise) => (
-              <div
-                key={exercise.id}
-                className={`p-4 border rounded-lg cursor-pointer ${
-                  selectedExercise?.id === exercise.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200'
+    <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!isExerciseStarted ? (
+          <div className="max-w-3xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">
+              Choose Your Exercise
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {EXERCISE_TYPES.map((exercise) => (
+                <div
+                  key={exercise.id}
+                  className={`relative overflow-hidden rounded-xl shadow-md transition-all duration-300 cursor-pointer ${
+                    selectedExercise?.id === exercise.id 
+                      ? 'ring-2 ring-blue-500 transform scale-105' 
+                      : 'hover:shadow-lg'
+                  }`}
+                  onClick={() => setSelectedExercise(exercise)}
+                >
+                  <div className="p-6 bg-white">
+                    <h3 className="text-xl font-semibold mb-2">{exercise.name}</h3>
+                    <p className="text-gray-600 mb-4">{exercise.description}</p>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-gray-700 mb-2">Instructions:</h4>
+                      <p className="text-sm text-gray-600">{exercise.instructions}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <button
+                className={`px-8 py-4 rounded-lg text-lg font-medium transition-all duration-300 ${
+                  selectedExercise
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
-                onClick={() => setSelectedExercise(exercise)}
+                onClick={() => setIsExerciseStarted(true)}
+                disabled={!selectedExercise}
               >
-                <h3 className="font-semibold">{exercise.name}</h3>
-                <p className="text-gray-600">{exercise.description}</p>
-                <p className="text-sm text-gray-500 mt-2">{exercise.instructions}</p>
-              </div>
-            ))}
+                Start Exercise
+              </button>
+            </div>
           </div>
-          <button
-            className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
-            onClick={() => setIsExerciseStarted(true)}
-            disabled={!selectedExercise}
-          >
-            Start Exercise
-          </button>
-        </div>
-      ) : (
-        <div className="relative max-w-2xl mx-auto">
-          <video
-            ref={videoRef}
-            className="hidden"
-            autoPlay
-            playsInline
-            width="640"
-            height="480"
-          />
-          <canvas
-            ref={canvasRef}
-            className="rounded-lg shadow-lg"
-            width="640"
-            height="480"
-          />
-          
-          <ExerciseInfoOverlay 
-            exercise={selectedExercise}
-            stats={exerciseStats}
-            onEnd={() => {
-              // Stop video stream
-              if (videoRef.current?.srcObject) {
-                const tracks = videoRef.current.srcObject.getTracks();
-                tracks.forEach(track => track.stop());
-                videoRef.current.srcObject = null;
-              }
+        ) : (
+          <div className="relative max-w-4xl mx-auto">
+            <video
+              ref={videoRef}
+              className="hidden"
+              autoPlay
+              playsInline
+              width="640"
+              height="480"
+            />
+            <canvas
+              ref={canvasRef}
+              className="w-full rounded-2xl shadow-xl"
+              width="640"
+              height="480"
+            />
+            
+            {/* Exercise Info Overlay */}
+            <div className="absolute top-4 left-4 bg-white/95 p-6 rounded-xl shadow-lg max-w-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">{selectedExercise.name}</h2>
+                <button
+                  onClick={() => {
+                    if (videoRef.current?.srcObject) {
+                      const tracks = videoRef.current.srcObject.getTracks();
+                      tracks.forEach(track => track.stop());
+                    }
+                    setIsExerciseStarted(false);
+                    setSelectedExercise(null);
+                  }}
+                  className="text-gray-500 hover:text-red-500 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
               
-              // Reset states
-              setIsExerciseStarted(false);
-              setSelectedExercise(null);
-              setExerciseStats({
-                count: 0,
-                accuracy: 0,
-                feedback: '',
-                score: 0
-              });
-              setLastPoseState(null);
-              setStateConfidence(0);
-            }}
-          />
-          
-          <ExerciseInstructions exercise={selectedExercise} />
-        </div>
-      )}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">Reps</span>
+                    <span className="text-3xl font-bold text-blue-600">{exerciseStats.count}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">Score</span>
+                    <span className="text-2xl font-semibold">{exerciseStats.score}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Accuracy</span>
+                    <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${exerciseStats.accuracy}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {exerciseStats.feedback && (
+                  <div className={`p-3 rounded-lg ${
+                    exerciseStats.feedback.includes('Good')
+                      ? 'bg-green-50 text-green-700'
+                      : 'bg-yellow-50 text-yellow-700'
+                  }`}>
+                    {exerciseStats.feedback}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Instructions Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 bg-white/95 p-4 rounded-xl shadow-lg">
+              <h3 className="font-semibold mb-2">Instructions:</h3>
+              <p className="text-gray-600">{selectedExercise.instructions}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
