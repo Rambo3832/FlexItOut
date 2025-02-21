@@ -522,7 +522,14 @@ function ExerciseDetection() {
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-xl">{exercise.name}</h3>
           <button
-            onClick={onEnd}
+            onClick={() => {
+              // Cancel animation frame before ending
+              if (detectionRef.current) {
+                cancelAnimationFrame(detectionRef.current);
+                detectionRef.current = null;
+              }
+              onEnd();
+            }}
             className="text-red-500 hover:text-red-700"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
